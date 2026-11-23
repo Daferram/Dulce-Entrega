@@ -86,10 +86,26 @@ function abrirSesion(email) {
 }
 
 const TIPOS = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
+// Si los archivos se subieron "planos" (sin la carpeta public/), se sirven desde la raíz,
+// pero solo los de la tienda: nunca server.js, package.json ni la base de datos.
+const PUBLICOS_PLANOS = new Set(["index.html", "bdd.html", "app.js", "styles.css",
+  ...Array.from({ length: 12 }, (_, i) => `p${String(i + 1).padStart(2, "0")}.jpg`)]);
+const HAY_CARPETA_PUBLIC = fs.existsSync(path.join(PUBLIC_DIR, "index.html"));
+
+function rutaDeArchivo(ruta) {
+  const pedido = ruta === "/" ? "index.html" : ruta.replace(/^\/+/, "");
+  if (HAY_CARPETA_PUBLIC) {
+    const archivo = path.normalize(path.join(PUBLIC_DIR, pedido));
+    return archivo.startsWith(PUBLIC_DIR) ? archivo : null;
+  }
+  const nombre = pedido.replace(/^img\//, ""); // las fotos se piden como img/p01.jpg
+  return PUBLICOS_PLANOS.has(nombre) ? path.join(__dirname, nombre) : null;
+}
+
 function servirArchivo(req, res) {
   const ruta = decodeURIComponent(new URL(req.url, "http://x").pathname);
-  const archivo = path.normalize(path.join(PUBLIC_DIR, ruta === "/" ? "index.html" : ruta));
-  if (!archivo.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
+  const archivo = rutaDeArchivo(ruta);
+  if (!archivo) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("No encontrado"); }
   fs.readFile(archivo, (err, contenido) => {
     if (err) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("No encontrado"); }
     res.writeHead(200, { "Content-Type": TIPOS[path.extname(archivo)] || "application/octet-stream" });
