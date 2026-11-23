@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base de datos en vivo – Dulce Entrega</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  main{max-width:1280px;padding-top:28px}
+  .top{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:start;margin-bottom:28px}
+  .top h1{font-size:clamp(2rem,3.6vw,2.8rem);line-height:1.1}
+  .live{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .dot.off{background:var(--err)}
+  .qrbox{background:var(--surface);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:260px}
+  #qr{background:#fff;padding:10px;line-height:0}
+  #qr img,#qr canvas{width:200px;height:200px}
+  .qrurl{font-size:.95rem;word-break:break-all;text-align:center;max-width:240px}
+  .qrbox input{width:100%;padding:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:.85rem}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .tile{background:var(--surface);border:1px solid var(--line);padding:16px 18px}
+  .tile span{display:block;font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+  .tile b{font-family:var(--display);font-weight:500;font-size:2.6rem;line-height:1.1;font-variant-numeric:lining-nums tabular-nums}
+  .cols{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;align-items:start}
+  section.blk{background:var(--surface);border:1px solid var(--line);padding:18px 20px}
+  section.blk h2{font-size:1.5rem;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  th{font-weight:400;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--ink)}
+  td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:lining-nums tabular-nums}
+  td.num{text-align:right;white-space:nowrap}
+  td.mono{font-family:ui-monospace,Consolas,monospace;font-size:.8rem;color:var(--muted)}
+  tr.new td{animation:flash 2.5s ease-out}
+  @keyframes flash{from{background:color-mix(in srgb,var(--gold) 35%,transparent)}to{background:transparent}}
+  .empty{color:var(--muted);padding:12px 0;margin:0}
+  .rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .rank li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:4px 0}
+  .stack{display:flex;flex-direction:column;gap:24px}
+  .err{color:var(--err)}
+  @media (max-width:900px){.top,.cols{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,1fr)}}
+  @media (prefers-reduced-motion: reduce){tr.new td{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <p class="eyebrow">Dulce Entrega · Panel para la presentación</p>
+      <h1>Base de datos en vivo</h1>
+      <div class="live"><span class="dot" id="dot"></span><span id="estado">Conectando…</span></div>
+      <p style="font-family:var(--display);font-size:clamp(1.4rem,2.4vw,2rem);line-height:1.25;margin:22px 0 10px;max-width:24ch">Escaneá el código con tu celular, registrate y comprá: tu pedido aparece acá en segundos.</p>
+      <p class="sub">Usá un email inventado. Los emails se muestran parcialmente ocultos y las contraseñas solo como su huella cifrada (hash).</p>
+    </div>
+    <div class="qrbox">
+      <div id="qr" aria-label="Código QR para entrar a la tienda"></div>
+      <div class="qrurl" id="qrurl">Esperando la dirección pública…</div>
+      <label for="urlManual" class="sub" style="margin:0">¿No aparece? Pegá la dirección pública:</label>
+      <input id="urlManual" type="url" placeholder="https://…trycloudflare.com">
+    </div>
+  </div>
+
+  <p class="notice err hidden" id="error"></p>
+
+  <div class="tiles">
+    <div class="tile"><span>Clientes</span><b id="tClientes">0</b></div>
+    <div class="tile"><span>Pedidos</span><b id="tPedidos">0</b></div>
+    <div class="tile"><span>Unidades vendidas</span><b id="tUnidades">0</b></div>
+    <div class="tile"><span>Total vendido</span><b id="tTotal">$U 0</b></div>
+  </div>
+
+  <div class="cols">
+    <section class="blk">
+      <h2>Pedidos</h2>
+      <p class="sub">Colección <code>pedidos</code> · el más reciente arriba</p>
+      <table><thead><tr><th>Número</th><th>Cliente</th><th>Hora</th><th>Detalle</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody id="pedidos"></tbody></table>
+      <p class="empty" id="sinPedidos">Todavía no hay pedidos.</p>
+    </section>
+    <div class="stack">
+      <section class="blk">
+        <h2>Más vendidos</h2>
+        <ul class="rank" id="ranking"></ul>
+        <p class="empty" id="sinRanking">Sin ventas todavía.</p>
+      </section>
+      <section class="blk">
+        <h2>Clientes</h2>
+        <p class="sub">Colección <code>clientes</code> · la contraseña nunca se guarda</p>
+        <table><thead><tr><th>Email</th><th>Alta</th><th>Hash de la contraseña</th></tr></thead>
+          <tbody id="clientes"></tbody></table>
+        <p class="empty" id="sinClientes">Todavía no hay clientes.</p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const clave = new URLSearchParams(location.search).get("clave") || "";
+  const fmt = (n) => "$U " + Number(n).toLocaleString("es-UY", { maximumFractionDigits: 0 });
+  const hora = (iso) => new Date(iso).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const vistos = { pedidos: new Set(), clientes: new Set() };
+  let primera = true;
+
+  /* ---------- Código QR ---------- */
+  let urlActual = null;
+  function mostrarQR(url) {
+    if (!url || url === urlActual) return;
+    urlActual = url;
+    $("qrurl").textContent = url.replace(/^https?:\/\//, "");
+    $("qr").innerHTML = "";
+    if (window.QRCode) new QRCode($("qr"), { text: url, width: 400, height: 400, correctLevel: QRCode.CorrectLevel.M });
+    else $("qr").innerHTML = '<p class="sub" style="line-height:1.4;margin:0">Sin conexión para generar el QR: compartí la dirección escrita.</p>';
+  }
+  $("urlManual").addEventListener("change", (e) => { const v = e.target.value.trim(); if (/^https?:\/\//.test(v)) mostrarQR(v); });
+  async function buscarTunel() {
+    if (urlActual) return;
+    try { const r = await fetch("/api/tunel?clave=" + encodeURIComponent(clave)); const d = await r.json(); if (d.url) mostrarQR(d.url); } catch (e) {}
+  }
+
+  /* ---------- Datos ---------- */
+  function filas(tbody, lista, clave, pintar) {
+    $(tbody).innerHTML = lista.map((x) => {
+      const nueva = !primera && !vistos[tbody].has(x[clave]);
+      vistos[tbody].add(x[clave]);
+      return `<tr class="${nueva ? "new" : ""}">${pintar(x)}</tr>`;
+    }).join("");
+  }
+  async function actualizar() {
+    try {
+      const r = await fetch("/api/bdd?clave=" + encodeURIComponent(clave), { cache: "no-store" });
+      if (r.status === 403) throw new Error("Clave incorrecta: abrí el enlace que muestra la ventana del servidor.");
+      const d = await r.json();
+      $("error").classList.add("hidden");
+      $("dot").classList.remove("off"); $("estado").textContent = "En vivo · actualizado " + hora(new Date().toISOString());
+      $("tClientes").textContent = d.resumen.clientes;
+      $("tPedidos").textContent = d.resumen.pedidos;
+      $("tUnidades").textContent = d.resumen.unidades;
+      $("tTotal").textContent = fmt(d.resumen.totalVendido);
+      filas("pedidos", d.pedidos, "numero", (p) =>
+        `<td>${esc(p.numero)}</td><td>${esc(p.email)}</td><td>${hora(p.fecha)}</td>
+         <td>${p.items.map((i) => `${i.cantidad} × ${esc(i.nombre)}`).join("<br>")}</td><td class="num">${fmt(p.total)}</td>`);
+      filas("clientes", d.clientes, "creado", (c) =>
+        `<td>${esc(c.email)}</td><td>${hora(c.creado)}</td><td class="mono">${esc(c.hash)}</td>`);
+      $("sinPedidos").classList.toggle("hidden", d.pedidos.length > 0);
+      $("sinClientes").classList.toggle("hidden", d.clientes.length > 0);
+      $("ranking").innerHTML = d.resumen.masVendidos.map((m) => `<li><span>${esc(m.nombre)}</span><b>${m.unidades}</b></li>`).join("");
+      $("sinRanking").classList.toggle("hidden", d.resumen.masVendidos.length > 0);
+      primera = false;
+    } catch (e) {
+      $("dot").classList.add("off");
+      $("estado").textContent = "Sin conexión con el servidor";
+      $("error").textContent = e.message.startsWith("Clave") ? e.message : "No se pudo leer la base de datos. ¿Está encendido el servidor?";
+      $("error").classList.remove("hidden");
+    }
+  }
+
+  // Si el panel se abre desde un servidor publicado (no desde la laptop), el QR apunta a esa misma dirección
+  if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) mostrarQR(location.origin);
+  actualizar(); buscarTunel();
+  setInterval(actualizar, 2000);
+  setInterval(buscarTunel, 3000);
+})();
+</script>
+</body>
+</html>

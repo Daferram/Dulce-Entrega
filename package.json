@@ -1,0 +1,14 @@
+{
+  "name": "dulce-entrega",
+  "version": "1.2.0",
+  "description": "Tienda web de postres - Grupo 2, Tecnología, Disrupción y Negocios (MBA UCU)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

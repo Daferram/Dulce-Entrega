@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dulce Entrega</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="brand" href="#catalogo"><b>Dulce <span>Entrega</span></b><small>Pastelería de autor</small></a>
+    <nav aria-label="Principal">
+      <a class="navlink" href="#catalogo">Catálogo</a>
+      <a class="navlink cart" href="#carrito">Carrito<span class="badge" id="cartCount">0</span></a>
+      <span id="sessionOut"><a class="navlink" href="#ingresar">Ingresar</a><a class="navlink" href="#registro">Registrarse</a></span>
+      <span id="sessionIn" class="hidden"><span class="who" id="whoEmail"></span><button class="navlink" id="logoutBtn" type="button">Cerrar sesión</button></span>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Catálogo -->
+  <section id="v-catalogo">
+    <div class="intro">
+      <p class="eyebrow">Colección de temporada</p>
+      <h1>Postres de autor, entregados en tu mesa</h1>
+      <hr class="rule">
+      <p>Elegí tus piezas y confirmá tu pedido. El pago se coordina al momento de la entrega.</p>
+    </div>
+    <p class="notice hidden" id="catNotice"></p>
+    <div class="filters" id="filters" role="group" aria-label="Filtrar por categoría"></div>
+    <div class="grid" id="grid"></div>
+    <p class="credits">Fotos de bancos de imágenes libres de <a href="https://www.pexels.com/license/">Pexels</a> (uso gratuito permitido).</p>
+  </section>
+
+  <!-- Carrito -->
+  <section id="v-carrito" class="narrow hidden">
+    <div class="intro"><p class="eyebrow">Tu selección</p><h1>Carrito</h1><hr class="rule"></div>
+    <p class="notice hidden" id="cartNotice"></p>
+    <div class="panel">
+      <div id="cartLines"></div>
+      <div class="total"><span>Total</span><strong id="cartTotal">$U 0</strong></div>
+      <div class="actions">
+        <a class="btn ghost" href="#catalogo">Seguir comprando</a>
+        <button class="btn" id="confirmBtn" type="button">Confirmar compra</button>
+      </div>
+      <p class="ferr" id="confirmErr"></p>
+    </div>
+  </section>
+
+  <!-- Registro -->
+  <section id="v-registro" class="narrow hidden">
+    <div class="intro"><p class="eyebrow">Bienvenida</p><h1>Crear cuenta</h1><hr class="rule"><p>Con tu email y una contraseña.</p></div>
+    <p class="notice hidden" id="regNotice"></p>
+    <div class="panel">
+      <form id="regForm" novalidate>
+        <label for="regEmail">Email<input type="email" id="regEmail" autocomplete="email" required></label>
+        <label for="regPass">Contraseña (8 caracteres o más)<input type="password" id="regPass" autocomplete="new-password" required></label>
+        <label for="regPass2">Repetir contraseña<input type="password" id="regPass2" autocomplete="new-password" required></label>
+        <p class="ferr" id="regErr" role="alert"></p>
+        <button class="btn" type="submit" id="regBtn">Crear cuenta</button>
+      </form>
+      <p class="switch">¿Ya tenés cuenta? <a href="#ingresar">Ingresá</a></p>
+    </div>
+  </section>
+
+  <!-- Ingreso -->
+  <section id="v-ingresar" class="narrow hidden">
+    <div class="intro"><p class="eyebrow">Tu cuenta</p><h1>Ingresar</h1><hr class="rule"></div>
+    <p class="notice hidden" id="logNotice"></p>
+    <div class="panel">
+      <form id="logForm" novalidate>
+        <label for="logEmail">Email<input type="email" id="logEmail" autocomplete="email" required></label>
+        <label for="logPass">Contraseña<input type="password" id="logPass" autocomplete="current-password" required></label>
+        <p class="ferr" id="logErr" role="alert"></p>
+        <button class="btn" type="submit" id="logBtn">Ingresar</button>
+      </form>
+      <p class="switch">¿No tenés cuenta? <a href="#registro">Registrate</a></p>
+    </div>
+  </section>
+
+  <!-- Compra confirmada -->
+  <section id="v-confirmado" class="narrow hidden">
+    <div class="intro"><p class="eyebrow">Gracias</p><h1>Pedido confirmado</h1><hr class="rule"></div>
+    <div class="panel" id="confPanel"></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
